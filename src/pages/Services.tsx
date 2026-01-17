@@ -69,6 +69,7 @@ const Services: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [scanningFieldId, setScanningFieldId] = useState<string | null>(null);
+  const [captureMode, setCaptureMode] = useState<string | undefined>(undefined);
   const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -194,7 +195,6 @@ const Services: React.FC = () => {
         fields: activeTemplate.fields.map(f => ({ 
           ...f, 
           value: fieldValues[f.id],
-          // Support for notes can be added here if the type.ts is updated
         })),
         totalValue: calculateTotal(),
         status: 'completed',
@@ -271,9 +271,13 @@ const Services: React.FC = () => {
     setActiveTemplate({...activeTemplate, fields: newFields});
   };
 
-  const handleScan = (fieldId: string) => {
+  const handleScan = (fieldId: string, mode: 'camera' | 'gallery' = 'camera') => {
     setScanningFieldId(fieldId);
-    fileInputRef.current?.click();
+    setCaptureMode(mode === 'camera' ? 'environment' : undefined);
+    // Timeout ensuring state update propagates to the DOM before the virtual click
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 10);
   };
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -450,9 +454,14 @@ const Services: React.FC = () => {
                     <h4 className="font-black text-slate-800 text-2xl tracking-tight leading-tight">{field.label}</h4>
                  </div>
                  {['ai_placa', 'photo', 'ai_imei', 'ai_brand_model'].includes(field.type) && (
-                   <button onClick={() => handleScan(field.id)} className="w-16 h-16 text-indigo-600 bg-white border border-slate-100 shadow-xl rounded-[1.5rem] active:scale-90 transition-all flex items-center justify-center hover:bg-indigo-50">
-                     <Camera size={28} />
-                   </button>
+                   <div className="flex gap-3">
+                     <button onClick={() => handleScan(field.id, 'gallery')} className="w-14 h-14 text-indigo-400 bg-white border border-slate-100 shadow-md rounded-[1.2rem] active:scale-90 transition-all flex items-center justify-center hover:bg-indigo-50" title="Buscar na Galeria">
+                       <ImageIcon size={24} />
+                     </button>
+                     <button onClick={() => handleScan(field.id, 'camera')} className="w-14 h-14 text-indigo-600 bg-white border border-slate-100 shadow-xl rounded-[1.2rem] active:scale-90 transition-all flex items-center justify-center hover:bg-indigo-50" title="Tirar Foto">
+                       <Camera size={24} />
+                     </button>
+                   </div>
                  )}
               </div>
 
@@ -464,7 +473,6 @@ const Services: React.FC = () => {
                 <div className="relative group/photo"><img src={fieldValues[field.id]} className="w-full h-80 rounded-[3rem] object-cover border-8 border-white shadow-2xl transition-all group-hover/photo:scale-[1.02]" /><button onClick={() => handleFieldChange(field.id, null)} className="absolute top-4 right-4 bg-white/80 backdrop-blur-md p-3 rounded-2xl text-rose-500 shadow-xl"><Trash2 size={20}/></button></div>
               )}
 
-              {/* Text Input area for all manual or notes entry */}
               {['text', 'number', 'price', 'ai_placa', 'ai_imei', 'ai_brand_model', 'photo'].includes(field.type) && (
                 <div className="space-y-3">
                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-6">
@@ -533,7 +541,7 @@ const Services: React.FC = () => {
           ))}
         </div>
 
-        <input ref={fileInputRef} type="file" className="hidden" capture="environment" onChange={onFileChange} />
+        <input ref={fileInputRef} type="file" className="hidden" capture={captureMode} onChange={onFileChange} />
         <div className="fixed bottom-0 left-0 right-0 p-6 sm:p-10 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent z-[70] max-w-4xl mx-auto flex justify-center"><button onClick={finishInspection} className="w-full h-[80px] rounded-[2.5rem] bg-[#4F46E5] text-white font-black shadow-[0_30px_60px_rgba(79,70,229,0.3)] active:scale-95 transition-all flex items-center justify-center gap-4 text-xl animate-slide-up hover:bg-[#4338ca]"><CheckCircle2 size={32} /> {currentOrderId ? 'ATUALIZAR VISTORIA' : 'CONCLUIR VISTORIA PRO'}</button></div>
       </div>
     );
